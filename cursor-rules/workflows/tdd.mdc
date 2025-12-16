@@ -1,0 +1,139 @@
+---
+alwaysApply: true
+---
+
+# Test-Driven Development (TDD) Rules
+
+## Strict Enforcement
+**MANDATORY**: This TDD workflow applies to every single code generation task in this project.
+
+- **You are FORBIDDEN from writing implementation code (logic) until a failing test case has been written and confirmed.**
+- Implementation code may only be written after a test exists that demonstrates the expected behavior.
+- Tests must be run and confirmed to fail for the right reason before implementation begins.
+
+## TDD Cycle (Red-Green-Refactor)
+
+### RED: Write a Failing Test
+- Write a comprehensive unit test that fails because the feature doesn't exist yet
+- The test should clearly define the expected behavior
+- Run the test and confirm it fails for the right reason (not due to syntax errors)
+- Tests must explicitly cover boundary conditions (e.g., negative inputs, 0, max limits, null/undefined values)
+
+### GREEN: Make the Test Pass
+- Write the minimum amount of code required to make the test pass
+- Do not add extra functionality beyond what the test requires
+- Run the test and confirm it passes
+
+### REFACTOR: Optimize the Code
+- Optimize the code (clean up, improve performance, apply DRY principles)
+- Ensure the test still passes after refactoring
+- Add additional tests if new edge cases are discovered during refactoring
+
+## Test Structure
+- **Test files must mirror the source directory structure**
+  - Example: `src/calculators/fib.py` → `tests/calculators/test_fib.py`
+  - Example: `src/api/routes.py` → `tests/api/test_routes.py`
+- Maintain the same directory hierarchy in tests as in source code
+- Use consistent naming conventions (e.g., `test_` prefix for test files and functions)
+
+## Test First
+- Write tests before implementation
+- Tests should fail for the right reason (feature missing, not syntax errors)
+- One assertion per test (when possible)
+- Test behavior, not implementation
+- Tests must explicitly cover boundary conditions:
+  - Negative inputs
+  - Zero/null/undefined values
+  - Maximum limits (memory, size, etc.)
+  - Empty collections/strings
+  - Invalid input types
+  - Edge cases specific to the domain
+
+## Tooling
+- **Python**: Use pytest for running tests, unittest.mock for isolating dependencies, conftest.py for shared fixtures
+- **JavaScript/TypeScript**: Use Jest, Vitest, or Mocha for running tests, with appropriate mocking libraries
+- **Other languages**: Use language-appropriate testing frameworks and mocking tools
+- Use test runners that provide clear feedback on failures
+- Use coverage tools to track test coverage
+
+## Pytest Fixtures Best Practices (Python)
+**MANDATORY for Python projects**: Follow these fixture guidelines when using pytest.
+
+### Fixture Scope
+- Choose appropriate scope based on resource cost and test isolation needs:
+  - `function` (default): Created fresh for each test - best for isolation
+  - `class`: Shared across all tests in a class
+  - `module`: Shared across all tests in a module
+  - `session`: Created once per test session - use for expensive setup (DB connections, API clients)
+
+### Fixture Organization
+- Place shared fixtures in `conftest.py` at the appropriate directory level
+- Use `conftest.py` in test root for project-wide fixtures
+- Use `conftest.py` in subdirectories for feature-specific fixtures
+
+### Fixture Dependencies
+- Use fixture parameters to create fixture chains and dependencies
+- Example: `def test_user(db_session, sample_user):` where `sample_user` depends on `db_session`
+
+### Parametrized Fixtures
+- Use `@pytest.fixture(params=[...])` for testing multiple scenarios with the same test code
+
+### Fixture Cleanup
+- Use `yield` for setup/teardown in fixtures - code after `yield` runs as teardown
+- Example: `yield db_session; db_session.rollback()` ensures cleanup even if test fails
+
+### Autouse Fixtures
+- Use `autouse=True` sparingly - only for fixtures that must run for every test (e.g., logging setup, environment variables)
+
+### Fixture Factories
+- For dynamic fixture creation, return a factory function instead of the object itself
+- Example: `@pytest.fixture; def user_factory(): return lambda **kwargs: User(**kwargs)`
+
+### Database Fixtures
+- Always use transactions or test databases - **NEVER use production databases in tests**
+- Use `pytest.fixture(scope="function")` with transaction rollback for database tests
+- Consider using `pytest-postgresql` or `pytest-mysql` for database testing
+
+### API Client Fixtures
+- Mock external APIs in tests - use `responses` library or `unittest.mock.patch` for HTTP requests
+
+### Performance
+- Use `session`-scoped fixtures for expensive resources (DB connections, file I/O setup) that can be safely shared
+
+## Test Quality
+- Tests should be fast, isolated, and repeatable
+- Use descriptive test names that clearly state what is being tested
+- Follow AAA pattern (Arrange, Act, Assert)
+- Keep tests simple and focused on one behavior
+- Mock external dependencies (databases, APIs, file system, etc.)
+- Use shared fixtures/test utilities to reduce duplication
+
+## Coverage
+- Aim for high test coverage (>80%)
+- Focus on critical paths
+- Test edge cases and error conditions
+- Don't test framework/library code
+- Use coverage tools to identify gaps
+
+## Documentation Updates
+- **After a test passes**, you must update the `docs/IMPLEMENTATION_STATUS.md` file to reflect the progress
+- Document which features have been implemented and tested
+- Update status, progress percentage, and next steps
+- Note any blockers or issues encountered during testing
+
+## Refactoring
+- Refactor with confidence when tests pass
+- Keep tests passing during refactoring
+- Update tests when requirements change
+- Remove obsolete tests
+- Refactoring should improve code quality without changing behavior
+
+## Best Practices
+- Run tests frequently (after each small change)
+- Keep test suite fast (<1 minute for unit tests)
+- Use test doubles (mocks, stubs, fakes) appropriately
+- Write integration tests for critical flows
+- Maintain test documentation
+- Never skip writing tests to "save time"
+- Always confirm tests fail before implementing (verify the test is actually testing something)
+- Update IMPLEMENTATION_STATUS.md after each passing test

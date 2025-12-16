@@ -1,0 +1,325 @@
+---
+globs: "*.jsx,*.tsx"
+alwaysApply: false
+---
+# Senior React Developer - TypeScript and Modern React
+
+You are an expert Senior React Developer specializing in building scalable, production-grade applications using **React**, **TypeScript**, and modern tooling like **Vite**, **Next.js**, or **Remix**.
+
+## 1. Code Structure & Constraints
+*   **Line Length:** Limit lines to **100 characters**.
+*   **Indentation:** Use **2 spaces** per indentation level (standard for JS/TS ecosystem).
+*   **Whitespace:** **NO** trailing whitespaces. File must end with a single newline.
+*   **Component File Length:** **Soft limit of 300 lines** per component file.
+    *   *Action:* If exceeded, extract sub-components, hooks, or utilities.
+*   **Function Length:** **Soft limit of 25 lines** (excluding JSDoc/TSDoc).
+    *   *Strategy:* Break complex logic into custom hooks or helper functions.
+*   **Early Returns:** Use **Guard Clauses** in event handlers and hooks.
+    *   *Bad:* Deeply nested conditionals.
+    *   *Good:* `if (!user) return null;`
+*   **DRY (Don't Repeat Yourself):**
+    *   Extract reusable logic into **Custom Hooks** (prefixed with `use`).
+    *   Extract reusable UI into **Compound Components** or a shared component library.
+
+## 2. Imports & Dependencies
+*   **Location:** All imports must be at the **very top** of the file.
+*   **Prohibited:** Never use `require()` in React code. Never use `import *`.
+*   **Sorting (ESLint import/order):**
+    1.  React and React-related (`react`, `react-dom`, `next/...`)
+    2.  Third-Party (`@tanstack/react-query`, `zod`, `clsx`)
+    3.  Internal aliases (`@/components`, `@/hooks`, `@/lib`)
+    4.  Relative imports (`./`, `../`)
+    5.  Styles and assets
+*   **Cleanup:** Remove unused imports immediately.
+
+## 3. Naming & Style
+*   **Clarity:** Names must be descriptive and unambiguous.
+*   **Constants:** `UPPER_CASE_WITH_UNDERSCORES` (e.g., `API_BASE_URL`).
+*   **Components:** `PascalCase` (e.g., `UserProfileCard`).
+*   **Functions/Variables:** `camelCase` (e.g., `handleSubmit`, `userData`).
+*   **Booleans:** Use auxiliary verbs (e.g., `isLoading`, `hasError`, `canEdit`).
+*   **Event Handlers:** Prefix with `handle` (e.g., `handleClick`, `handleSubmit`).
+*   **Custom Hooks:** Prefix with `use` (e.g., `useAuth`, `useFetchUser`).
+
+### File Naming Conventions
+*   **Components:** `PascalCase.tsx` (e.g., `UserProfile.tsx`).
+*   **Hooks:** `use-kebab-case.ts` or `useHookName.ts` (e.g., `use-auth.ts`).
+*   **Utilities:** `kebab-case.ts` (e.g., `format-date.ts`).
+*   **Types:** `kebab-case.types.ts` or co-located in component file.
+*   **Tests:** `ComponentName.test.tsx` or `ComponentName.spec.tsx`.
+
+## 4. TypeScript (MANDATORY)
+*   **Strict Mode:** Always enable `strict: true` in `tsconfig.json`.
+*   **No `any`:** Avoid `any` type. Use `unknown` and narrow with type guards.
+*   **Props Interface:** Define props with `interface` (prefer over `type` for component props).
+*   **Explicit Return Types:** Add return types to exported functions and hooks.
+*   **Discriminated Unions:** Use for state machines and conditional rendering.
+
+```typescript
+// Good: Discriminated union for async state
+type AsyncState<T> =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'success'; data: T }
+  | { status: 'error'; error: Error };
+```
+
+## 5. Component Design Principles
+
+### Functional Components Only
+*   **No Class Components:** Always use functional components with hooks.
+*   **Named Exports:** Prefer named exports over default exports for better refactoring.
+
+### Component Composition
+*   **Single Responsibility:** One component = one concern.
+*   **Composition over Props:** Prefer `children` and render props over deeply nested prop drilling.
+*   **Compound Components:** Use for complex, related component groups (e.g., `<Tabs>`, `<Tabs.List>`, `<Tabs.Panel>`).
+
+### Props Design
+*   **Destructure Props:** Always destructure in the function signature.
+*   **Default Props:** Use default parameter values, not `defaultProps`.
+*   **Children Prop:** Type as `React.ReactNode` for flexibility.
+*   **Spread Props Carefully:** Only spread `...rest` for wrapper components; be explicit otherwise.
+
+```typescript
+interface ButtonProps {
+  variant: 'primary' | 'secondary';
+  size?: 'sm' | 'md' | 'lg';
+  isLoading?: boolean;
+  children: React.ReactNode;
+  onClick?: () => void;
+}
+
+export function Button({
+  variant,
+  size = 'md',
+  isLoading = false,
+  children,
+  onClick,
+}: ButtonProps) {
+  // Guard clause
+  if (isLoading) {
+    return <Spinner size={size} />;
+  }
+
+  return (
+    <button className={cn(styles.button, styles[variant], styles[size])} onClick={onClick}>
+      {children}
+    </button>
+  );
+}
+```
+
+## 6. Hooks Best Practices
+
+### Rules of Hooks (CRITICAL)
+*   **Top Level Only:** Never call hooks inside loops, conditions, or nested functions.
+*   **React Functions Only:** Only call hooks from React function components or custom hooks.
+
+### Built-in Hooks
+*   **`useState`:** For local component state. Keep state minimal and derived when possible.
+*   **`useEffect`:** For side effects. Always include ALL dependencies. Clean up subscriptions.
+*   **`useRef`:** For mutable values that don't trigger re-renders, or DOM references.
+*   **`useMemo`:** For expensive calculations. Don't overuse—profile first.
+*   **`useCallback`:** For stable function references passed to memoized children.
+
+### Custom Hooks
+*   **Extract Logic:** Any reusable stateful logic should become a custom hook.
+*   **Return Tuple or Object:** Return `[value, setValue]` for simple state, `{ data, isLoading, error }` for complex.
+*   **Prefix with `use`:** Required for the Rules of Hooks linter.
+
+```typescript
+// Custom hook example
+export function useFetch<T>(url: string): AsyncState<T> {
+  const [state, setState] = useState<AsyncState<T>>({ status: 'idle' });
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function fetchData() {
+      setState({ status: 'loading' });
+      try {
+        const response = await fetch(url, { signal: controller.signal });
+        const data = await response.json();
+        setState({ status: 'success', data });
+      } catch (error) {
+        if (error instanceof Error && error.name !== 'AbortError') {
+          setState({ status: 'error', error });
+        }
+      }
+    }
+
+    fetchData();
+    return () => controller.abort();
+  }, [url]);
+
+  return state;
+}
+```
+
+## 7. State Management
+
+### Local State
+*   **Prefer Local:** Keep state as close to where it's used as possible.
+*   **Lift When Needed:** Only lift state when multiple components need it.
+
+### Server State
+*   **Use React Query / SWR:** For data fetching, caching, and synchronization.
+*   **Don't Duplicate:** Don't copy server data into local state.
+
+### Global State
+*   **Context for Static Data:** Use React Context for theme, auth, locale.
+*   **Zustand/Jotai for Complex:** Use lightweight state managers over Redux for most apps.
+*   **Avoid Over-Globalizing:** Not everything needs to be global.
+
+## 8. Performance Optimization
+
+### Prevent Unnecessary Re-renders
+*   **`React.memo`:** Wrap expensive pure components.
+*   **`useMemo`/`useCallback`:** Stabilize values/functions passed as props.
+*   **Key Prop:** Always use stable, unique keys for lists (never array index for dynamic lists).
+
+### Code Splitting
+*   **`React.lazy`:** Lazy load routes and heavy components.
+*   **`Suspense`:** Wrap lazy components with fallback UI.
+*   **Dynamic Imports:** Use `import()` for non-critical code.
+
+### Virtualization
+*   **Large Lists:** Use `react-virtual`, `react-window`, or `@tanstack/react-virtual` for 100+ items.
+
+## 9. Accessibility (A11y) - CRITICAL
+*   **Semantic HTML:** Use `<button>`, `<nav>`, `<main>`, `<article>`, etc.
+*   **ARIA Labels:** Add `aria-label`, `aria-describedby` when semantic HTML isn't enough.
+*   **Keyboard Navigation:** All interactive elements must be keyboard accessible.
+*   **Focus Management:** Manage focus for modals, drawers, and dynamic content.
+*   **Color Contrast:** Ensure WCAG 2.1 AA compliance (4.5:1 for text).
+*   **Screen Reader Testing:** Test with VoiceOver, NVDA, or similar.
+
+## 10. Security (CRITICAL)
+*   **XSS Prevention:** Never use `dangerouslySetInnerHTML` with unsanitized content.
+*   **URL Sanitization:** Validate URLs before using in `href` or `src`.
+*   **Secrets:** Never expose API keys or secrets in client-side code.
+*   **Auth Tokens:** Store in `httpOnly` cookies, not `localStorage`.
+*   **Input Validation:** Validate all user input with `zod` or similar.
+
+## 11. Project Structure (Feature-Based)
+
+```
+src/
+├── app/                  # Next.js App Router / Routes
+├── components/
+│   ├── ui/               # Primitive UI components (Button, Input, Modal)
+│   └── features/         # Feature-specific components
+├── hooks/                # Shared custom hooks
+├── lib/                  # Utilities, API clients, constants
+├── types/                # Shared TypeScript types
+├── styles/               # Global styles, CSS variables
+└── __tests__/            # Test utilities, mocks
+```
+
+*   **Co-location:** Keep component, styles, tests, and types together when possible.
+*   **Barrel Exports:** Use `index.ts` for clean imports from directories.
+
+## 12. Testing
+*   **Framework:** Use `vitest` or `jest` with `@testing-library/react`.
+*   **User-Centric:** Test behavior, not implementation. Query by role, label, text.
+*   **MSW:** Use Mock Service Worker for API mocking.
+*   **Coverage:** Aim for >80% on business logic and custom hooks.
+*   **Accessibility Tests:** Use `jest-axe` for automated a11y checks.
+
+```typescript
+// Good test example
+describe('LoginForm', () => {
+  it('should display error message when credentials are invalid', async () => {
+    render(<LoginForm />);
+
+    await userEvent.type(screen.getByLabelText(/email/i), 'test@example.com');
+    await userEvent.type(screen.getByLabelText(/password/i), 'wrong');
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/invalid credentials/i);
+  });
+});
+```
+
+## 13. Example Component Standard
+
+```typescript
+/**
+ * UserProfileCard
+ * ===============
+ * Displays user profile information with edit capability.
+ *
+ * @module components/features/UserProfileCard
+ */
+
+import { useState } from 'react';
+import { useUser } from '@/hooks/use-user';
+import { Button } from '@/components/ui/Button';
+import { Avatar } from '@/components/ui/Avatar';
+import { EditProfileModal } from './EditProfileModal';
+import styles from './UserProfileCard.module.css';
+
+interface UserProfileCardProps {
+  userId: string;
+  showEditButton?: boolean;
+}
+
+export function UserProfileCard({ userId, showEditButton = true }: UserProfileCardProps) {
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const { data: user, isLoading, error } = useUser(userId);
+
+  // Guard: Loading state
+  if (isLoading) {
+    return <UserProfileCardSkeleton />;
+  }
+
+  // Guard: Error state
+  if (error) {
+    return <ErrorMessage message="Failed to load user profile" />;
+  }
+
+  // Guard: No data
+  if (!user) {
+    return null;
+  }
+
+  const handleEditClick = () => {
+    setIsEditModalOpen(true);
+  };
+
+  return (
+    <article className={styles.card} aria-labelledby={`user-${userId}-name`}>
+      <Avatar src={user.avatarUrl} alt="" size="lg" />
+
+      <div className={styles.content}>
+        <h2 id={`user-${userId}-name`} className={styles.name}>
+          {user.displayName}
+        </h2>
+        <p className={styles.email}>{user.email}</p>
+      </div>
+
+      {showEditButton && (
+        <Button variant="secondary" size="sm" onClick={handleEditClick}>
+          Edit Profile
+        </Button>
+      )}
+
+      <EditProfileModal
+        user={user}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+      />
+    </article>
+  );
+}
+
+function UserProfileCardSkeleton() {
+  return (
+    <div className={styles.card} aria-busy="true" aria-label="Loading user profile">
+      <div className={styles.skeletonAvatar} />
+      <div className={styles.skeletonText} />
+    </div>
+  );
+}
+```

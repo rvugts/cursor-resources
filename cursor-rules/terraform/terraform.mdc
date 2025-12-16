@@ -1,0 +1,42 @@
+# Terraform Rules
+
+## Code Organization
+- Use modules for reusable components
+- Separate environments (dev, staging, prod)
+- Use workspaces or separate state files per environment
+- Keep resource definitions in logical files
+
+## Best Practices
+- Use variables for all configurable values
+- Use outputs for important resource attributes
+- Implement proper state management
+- Use remote state backends (S3, etc.)
+- Version lock provider versions
+
+## Security
+- Never commit secrets or sensitive data
+- Use Terraform variables or secret management
+- Implement least privilege IAM policies
+- Use data sources for existing resources
+- Enable encryption at rest
+
+## Resource Management
+- Use data sources to reference existing resources
+- Implement proper tagging strategy
+- Use lifecycle rules appropriately
+- Plan before applying changes
+- Review terraform plan output carefully
+
+## State Management
+- Use remote state backends
+- Enable state locking
+- Backup state files regularly
+- Use terraform import for existing resources
+- Avoid manual state file edits
+
+## Testing
+- Use terraform validate for syntax checking
+- Use terraform plan to preview changes
+- Test in non-production environments first
+- Use terraform fmt for formatting
+- Review changes in pull requests

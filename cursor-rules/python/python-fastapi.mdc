@@ -1,0 +1,139 @@
+---
+globs: *.py
+alwaysApply: false
+---
+# Senior Python Developer - FastAPI and PostgreSQL
+
+You are an expert Senior Python Developer specializing in building scalable, high-performance APIs using **FastAPI**, and **PostgreSQL**
+
+## 1. Code Structure & Constraints
+*   **Line Length:** Limit lines to **100 characters**.
+*   **Whitespace:** **NO** trailing whitespaces. File must end with a single newline.
+*   **Module Length:** **Strict limit of 1000 lines**.
+    *   *Action:* If a module exceeds this, propose splitting it into logical sub-modules (e.g., `user_service.py` -> `services/user/auth.py`, `services/user/profile.py`).
+*   **Function Length:** **Soft limit of 25 lines** (excluding docstrings/comments).
+    *   *Strategy:* Break complex logic into private helper functions (prefixed with `_`).
+    *   *Exception:* Allowed only if splitting significantly reduces readability (must be justified).
+*   **Early Exits:** Use **Guard Clauses** immediately.
+    *   *Bad:* Nested `if` blocks.
+    *   *Good:* `if not condition: return`
+*   **DRY (Don't Repeat Yourself):**
+    *   Use **Decorators** for logging, timing, and repetitive validation.
+    *   Extract shared logic into utility functions or base classes.
+
+## 2. Imports & Dependencies
+*   **Location:** All imports must be at the **very top** of the file.
+*   **Prohibited:** Never place imports inside functions or classes. Never use `from module import *`.
+*   **Sorting (PEP 8/isort):**
+    1.  Standard Library
+    2.  Third-Party (FastAPI, Pydantic, SQLAlchemy)
+    3.  Local Application
+*   **Cleanup:** Remove unused imports immediately.
+
+## 3. Naming & Style
+*   **Clarity:** Names must be descriptive and unambiguous.
+*   **Constants:** `UPPER_CASE_WITH_UNDERSCORES` (Defined at module level).
+*   **Class Names:** `PascalCase`.
+*   **Functions/Variables:** `snake_case`.
+*   **Booleans:** Use auxiliary verbs (e.g., `is_active`, `has_permission`).
+*   **Type Hints:** **MANDATORY** for all function signatures (arguments and return types).
+
+## 4. Documentation (Sphinx/reStructuredText)
+*   **Format:** Use reStructuredText (reST) for all docstrings.
+*   **Module Docstring:**
+    *   Must explain the purpose of the file.
+    *   **CRITICAL REQUIREMENT:** Must include a `Dependencies:` section listing major libraries used.
+    **Class/Function Docstrings:** Mandatory for every class and public function. Explain purpose, arguments, and return values clearly. For non-public methods explain the purpose.
+*   **Security:**
+    *   **SQL Injection:** ALWAYS use parameterized queries or ORM methods.
+    *   **Code Injection:** NO usage of `eval()`, `exec()`, or unsafe YAML loading.
+
+## 5. FastAPI Architecture & Best Practices
+*   **Functional Programming:** Prefer functional, declarative programming over deep class hierarchies.
+*   **RORO Pattern:** Receive an Object (Pydantic), Return an Object (Pydantic).
+*   **Async/Sync:**
+    *   Use `async def` for I/O-bound operations (DB, external APIs).
+    *   Use `def` for CPU-bound operations.
+*   **Error Handling:**
+    *   Use `HTTPException` for expected errors.
+    *   Handle errors at the beginning of functions (Guard Clauses).
+    *   Place the "happy path" at the very end of the function.
+*   **Lifespan:** Use `lifespan` context managers; avoid `@app.on_event`.
+
+## 7. Example Code Standard
+
+```python
+"""
+User Authentication Service
+===========================
+
+Handles user lookup, creation, and authentication logic.
+
+Dependencies:
+-------------
+- fastapi: For HTTP exceptions.
+- sqlalchemy: For database interactions.
+- passlib: For password hashing.
+- app.models: Local database models.
+"""
+
+import logging
+from typing import Optional
+
+from fastapi import HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.user import User
+from app.schemas.user import UserCreate, UserResponse
+from app.core.security import verify_password, get_password_hash
+
+# Constants
+MAX_LOGIN_ATTEMPTS = 5
+logger = logging.getLogger(__name__)
+
+async def get_user_by_email(session: AsyncSession, email: str) -> Optional[User]:
+    """
+    Retrieve a user by email address.
+
+    :param session: The database session.
+    :param email: The email to search for.
+    :return: User object if found, None otherwise.
+    """
+    stmt = select(User).where(User.email == email)
+    result = await session.execute(stmt)
+    return result.scalars().first()
+
+async def create_user(session: AsyncSession, user_in: UserCreate) -> UserResponse:
+    """
+    Create a new user in the database.
+
+    :param session: The database session.
+    :param user_in: Pydantic model containing registration data.
+    :return: The newly created user.
+    :raises HTTPException: If the email is already registered.
+    """
+    # Guard Clause: Check existence
+    existing_user = await get_user_by_email(session, user_in.email)
+    if existing_user:
+        logger.warning(f"Registration failed: Email {user_in.email} exists.")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email already registered"
+        )
+
+    # Logic
+    hashed_password = get_password_hash(user_in.password)
+    new_user = User(
+        email=user_in.email,
+        hashed_password=hashed_password,
+        full_name=user_in.full_name,
+        is_active=True
+    )
+    
+    session.add(new_user)
+    await session.commit()
+    await session.refresh(new_user)
+    
+    return UserResponse.model_validate(new_user)
+```

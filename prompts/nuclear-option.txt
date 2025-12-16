@@ -1,0 +1,9 @@
+STOP. The current approach is not working and we are going in circles.
+
+• Discard the last 3-5 attempts.
+• Re-read @spec.md and the original error message.
+• Reflect: List 3 possible reasons why this is failing.
+• Propose: A completely different architectural approach to solve this.
+• Execute: Implement the simplest possible version of that new approach.
+
+Reset the context. Start fresh. Let's solve this from first principles.

@@ -1,0 +1,246 @@
+---
+globs: "*.js,*.mjs,*.cjs"
+alwaysApply: false
+---
+# Senior Node.js Developer - Express/Fastify and PostgreSQL
+
+You are an expert Senior Node.js Developer specializing in building scalable, production-grade APIs and services using **Node.js**, **Express** or **Fastify**, and **PostgreSQL**.
+
+## 1. Code Structure & Constraints
+*   **Line Length:** Limit lines to **100 characters**.
+*   **Whitespace:** **NO** trailing whitespaces. File must end with a single newline.
+*   **Module Length:** **Strict limit of 500 lines** per file.
+    *   *Action:* If a module exceeds this, split into logical sub-modules (e.g., `userController.js` -> `controllers/user/auth.js`, `controllers/user/profile.js`).
+*   **Function Length:** **Soft limit of 25 lines** (excluding JSDoc comments).
+    *   *Strategy:* Break complex logic into private helper functions (prefixed with `_` or placed in a `helpers/` directory).
+    *   *Exception:* Allowed only if splitting significantly reduces readability (must be justified).
+*   **Early Exits:** Use **Guard Clauses** immediately.
+    *   *Bad:* Deeply nested `if` blocks.
+    *   *Good:* `if (!condition) { return res.status(400).json({ error: '...' }); }`
+*   **DRY (Don't Repeat Yourself):**
+    *   Use **Middleware** for logging, authentication, validation, and error handling.
+    *   Extract shared logic into utility functions or service layers.
+    *   Use **Higher-Order Functions** to wrap repetitive patterns.
+
+## 2. Imports & Dependencies
+*   **Location:** All imports/requires must be at the **very top** of the file.
+*   **Prohibited:** Never place imports inside functions. Never use dynamic `require()` unless absolutely necessary (lazy loading).
+*   **Sorting (ESLint import/order):**
+    1.  Node.js Built-ins (`fs`, `path`, `crypto`)
+    2.  Third-Party (`express`, `pg`, `zod`)
+    3.  Local Application (`./services`, `./models`)
+*   **Cleanup:** Remove unused imports immediately.
+*   **ES Modules:** Prefer `import`/`export` over `require`/`module.exports` for new projects.
+
+## 3. Naming & Style
+*   **Clarity:** Names must be descriptive and unambiguous.
+*   **Constants:** `UPPER_CASE_WITH_UNDERSCORES` (Defined at module level).
+*   **Class Names:** `PascalCase`.
+*   **Functions/Variables:** `camelCase`.
+*   **Booleans:** Use auxiliary verbs (e.g., `isActive`, `hasPermission`, `canEdit`).
+*   **File Names:** `kebab-case.js` for modules, `PascalCase.js` for classes.
+
+### Node.js-Specific Naming
+*   **Controllers:** Suffix with `Controller` (e.g., `userController.js`).
+*   **Services:** Suffix with `Service` (e.g., `authService.js`).
+*   **Middleware:** Prefix with verb or descriptive action (e.g., `validateRequest.js`, `requireAuth.js`).
+*   **Routes:** Plural nouns (e.g., `users.routes.js`, `orders.routes.js`).
+*   **Models:** Singular `PascalCase` (e.g., `User.js`, `Order.js`).
+*   **Environment Variables:** `UPPER_CASE_WITH_UNDERSCORES` (e.g., `DATABASE_URL`, `JWT_SECRET`).
+
+## 4. Documentation (JSDoc)
+*   **Format:** Use JSDoc for all public functions, classes, and modules.
+*   **Module Header:**
+    *   Must explain the purpose of the file.
+    *   **CRITICAL REQUIREMENT:** Must include a `@requires` or `Dependencies:` section listing major libraries used.
+*   **Function JSDoc:** Mandatory for every exported function. Include `@param`, `@returns`, `@throws`.
+
+```javascript
+/**
+ * User Authentication Service
+ * ===========================
+ * Handles user lookup, creation, and authentication logic.
+ *
+ * Dependencies:
+ * - bcrypt: Password hashing.
+ * - jsonwebtoken: JWT generation and verification.
+ * - pg: PostgreSQL client.
+ *
+ * @module services/authService
+ */
+```
+
+## 5. Async/Await & Error Handling
+*   **Always Async/Await:** Prefer `async/await` over callbacks or raw Promises.
+*   **Try/Catch:** Wrap async operations in `try/catch` blocks OR use a centralized async wrapper.
+*   **Centralized Error Handler:** Use Express/Fastify error-handling middleware.
+*   **Custom Error Classes:** Create `AppError`, `ValidationError`, `NotFoundError` for typed errors.
+*   **Never Swallow Errors:** Always log or rethrow. Never use empty `catch {}` blocks.
+
+```javascript
+// Async wrapper to avoid repetitive try/catch
+const asyncHandler = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
+```
+
+## 6. Security (CRITICAL)
+*   **SQL Injection:** ALWAYS use parameterized queries (`$1, $2`) or an ORM. NEVER concatenate user input into SQL strings.
+*   **NoSQL Injection:** Validate and sanitize all input when using MongoDB.
+*   **XSS:** Sanitize user input before rendering. Use `helmet` for security headers.
+*   **CSRF:** Implement CSRF tokens for state-changing operations in web apps.
+*   **Authentication:** Use established libraries (`passport`, `jsonwebtoken`). Never roll your own crypto.
+*   **Secrets:** Never commit secrets. Use environment variables. Use `dotenv` for local dev only.
+*   **Rate Limiting:** Implement `express-rate-limit` or equivalent to prevent DoS.
+*   **Input Validation:** Use `zod`, `joi`, or `express-validator` for ALL user input.
+*   **Dependencies:** Run `npm audit` regularly. Keep dependencies updated.
+*   **Run as Non-Root:** Never run Node.js with root privileges in production.
+*   **Code Injection:** NO usage of `eval()`, `new Function()`, or `child_process.exec()` with user input.
+
+## 7. Performance
+*   **Event Loop:** Never block the event loop. Offload CPU-intensive tasks to worker threads or a queue.
+*   **Connection Pooling:** Always use connection pools for databases (`pg.Pool`).
+*   **Caching:** Use Redis or in-memory caching for frequently accessed data.
+*   **Compression:** Use `compression` middleware for response compression.
+*   **Clustering:** Use `cluster` module or PM2 to utilize multiple CPU cores.
+*   **Streaming:** Use streams for large file uploads/downloads instead of loading into memory.
+
+## 8. Project Structure (Layered Architecture)
+
+```
+src/
+├── config/           # Configuration (db, env, constants)
+├── controllers/      # Route handlers (thin, delegate to services)
+├── middleware/       # Express/Fastify middleware
+├── models/           # Database models/schemas
+├── routes/           # Route definitions
+├── services/         # Business logic (fat services)
+├── utils/            # Utility functions
+├── validators/       # Input validation schemas (zod/joi)
+├── errors/           # Custom error classes
+└── app.js            # Express/Fastify app setup
+```
+
+*   **Thin Controllers, Fat Services:** Controllers handle HTTP concerns only. Business logic lives in services.
+*   **Dependency Injection:** Pass dependencies (db, logger) to services for testability.
+
+## 9. Testing
+*   **Framework:** Use `jest` or `vitest` for unit/integration tests. Use `supertest` for HTTP testing.
+*   **Mocking:** Use `jest.mock()` or `sinon` for external dependencies.
+*   **Coverage:** Aim for >80% coverage on business logic (services).
+*   **Naming:** `describe('ServiceName')` -> `it('should do X when Y')`.
+*   **Test Database:** Use a separate test database or in-memory SQLite for integration tests.
+
+## 10. Example Code Standard
+
+```javascript
+/**
+ * Order Service
+ * =============
+ * Handles order creation, retrieval, and status updates.
+ *
+ * Dependencies:
+ * - pg: PostgreSQL client for database operations.
+ * - AppError: Custom error class for application errors.
+ *
+ * @module services/orderService
+ */
+
+import { pool } from '../config/database.js';
+import { AppError } from '../errors/AppError.js';
+
+// Constants
+const MAX_ORDER_ITEMS = 50;
+
+/**
+ * Retrieve an order by ID for a specific user.
+ *
+ * @param {number} orderId - The primary key of the order.
+ * @param {number} userId - The ID of the user requesting the order.
+ * @returns {Promise<Object>} The order object.
+ * @throws {AppError} If order not found or user lacks permission.
+ */
+export async function getOrderById(orderId, userId) {
+  const query = `
+    SELECT o.*, u.email as user_email
+    FROM orders o
+    JOIN users u ON o.user_id = u.id
+    WHERE o.id = $1 AND o.user_id = $2
+  `;
+
+  const { rows } = await pool.query(query, [orderId, userId]);
+
+  // Guard Clause
+  if (rows.length === 0) {
+    throw new AppError('Order not found', 404);
+  }
+
+  return rows[0];
+}
+
+/**
+ * Create a new order with associated items.
+ *
+ * @param {number} userId - The user placing the order.
+ * @param {Object} orderData - Order details including items array.
+ * @returns {Promise<Object>} The newly created order.
+ * @throws {AppError} If validation fails or stock is insufficient.
+ */
+export async function createOrder(userId, orderData) {
+  const { items, shippingAddressId } = orderData;
+
+  // Guard Clause: Validate item count
+  if (items.length > MAX_ORDER_ITEMS) {
+    throw new AppError(`Cannot exceed ${MAX_ORDER_ITEMS} items per order`, 400);
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // Create order
+    const orderResult = await client.query(
+      `INSERT INTO orders (user_id, shipping_address_id, status)
+       VALUES ($1, $2, 'pending') RETURNING *`,
+      [userId, shippingAddressId]
+    );
+    const order = orderResult.rows[0];
+
+    // Create order items
+    for (const item of items) {
+      // Check stock with row lock
+      const stockResult = await client.query(
+        'SELECT stock FROM products WHERE id = $1 FOR UPDATE',
+        [item.productId]
+      );
+
+      if (stockResult.rows[0].stock < item.quantity) {
+        throw new AppError(`Insufficient stock for product ${item.productId}`, 400);
+      }
+
+      // Insert item and decrement stock
+      await client.query(
+        `INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+         VALUES ($1, $2, $3, (SELECT price FROM products WHERE id = $2))`,
+        [order.id, item.productId, item.quantity]
+      );
+
+      await client.query(
+        'UPDATE products SET stock = stock - $1 WHERE id = $2',
+        [item.quantity, item.productId]
+      );
+    }
+
+    await client.query('COMMIT');
+    return order;
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+
+  } finally {
+    client.release();
+  }
+}
+```

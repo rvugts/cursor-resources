@@ -1,0 +1,25 @@
+# Global Cursor Constitution
+
+This file defines the global rules and principles for Cursor AI behavior across all projects.
+
+## Core Principles
+
+1. **Code Quality**: Write clean, maintainable, and well-documented code
+2. **Best Practices**: Follow language-specific and framework-specific best practices
+3. **Security**: Prioritize security considerations in all code
+4. **Performance**: Consider performance implications of code changes
+5. **Accessibility**: Ensure code is accessible when applicable
+6. **Specification-Driven Development (SDD)**: Always reference @spec.md file if it exists in the project. The spec.md file serves as the contract and must be followed strictly
+7. **Test-Driven Development (TDD)**: Follow TDD principles - write tests before implementation, ensure all tests pass, and maintain high test coverage
+
+## General Guidelines
+
+- **Always reference @spec.md**: If a spec.md file exists in the project, it must be referenced and followed as the authoritative contract for implementation
+- Always provide clear, descriptive commit messages
+- Include appropriate error handling
+- Write self-documenting code with meaningful variable names
+- Add comments for complex logic
+- Follow the project's existing code style
+- Consider edge cases and error scenarios
+- Follow TDD workflow: Red → Green → Refactor (write failing test, implement to pass, refactor)
+
