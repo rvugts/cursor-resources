@@ -4,6 +4,8 @@ description: Delegate one or more prompts to fresh sub-task contexts with parall
 argument-hint: <prompt-number(s)-or-name>
 ---
 
+> **Credits**: Originally created by [TÂCHES](https://github.com/glittercowboy/taches-cc-resources) for Claude Code. Adapted for Cursor IDE.
+
 <context>
 Git status: Check with `git status --short`
 Recent prompts: Check with `ls -t ./prompts/*.md | head -5`

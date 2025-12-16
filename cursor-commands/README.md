@@ -34,6 +34,8 @@ cp refactor-python.md .cursor/commands/
 - `/create-prompt` - Interview mode to build perfect prompts
 - `/run-prompt` - Execute previously created prompt files
 
+> **Credits**: These commands were originally created by [TÂCHES](https://github.com/glittercowboy/taches-cc-resources) for Claude Code and have been adapted for Cursor IDE to work with its range of AI agents.
+
 ## Usage
 
 In Cursor Composer (`Cmd/Ctrl+I`):

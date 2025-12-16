@@ -1,6 +1,6 @@
-# Cursor Vibe Coding Setup
+# AI-chitect Cursor Resources
 
-A comprehensive collection of Cursor rules, slash commands, MCP server configs, templates, and workflows for efficient development.
+A comprehensive collection of Cursor rules, slash commands, MCP server configs, templates, and workflows for efficient vibe coding.
 
 ## Overview
 
@@ -17,11 +17,16 @@ This repository contains:
 ## Quick Start
 
 1. Copy `.cursorrules` from `cursor-settings/` to your project root
-2. Copy relevant rule files from `cursor-rules/` to your project root in .cursor/rules
+2. Copy relevant rule files from `cursor-rules/` to your project root in `.cursor/rules`
+3. Copy relevant slash commands from `cursor-commands/` to your project root in `.cursor/commands` or to your home directory in `~/.cursor/commands`
 
 ## Structure
 
 See individual README files in each directory for detailed information.
+
+## Credits
+
+- **TÂCHES** - Original creator of the `/create-prompt` and `/run-prompt` slash commands. The original versions were designed for Claude Code and have been adapted for Cursor IDE. See: [taches-cc-resources](https://github.com/glittercowboy/taches-cc-resources)
 
 ## License
 

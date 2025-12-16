@@ -3,6 +3,8 @@ description: Create a new prompt that another agent can execute
 argument-hint: [task description]
 ---
 
+> **Credits**: Originally created by [TÂCHES](https://github.com/glittercowboy/taches-cc-resources) for Claude Code. Adapted for Cursor IDE.
+
 <context>
 Before generating prompts, check `./prompts/*.md` to:
 1. Determine if the prompts directory exists
