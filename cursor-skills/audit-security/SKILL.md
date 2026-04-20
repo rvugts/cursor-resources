@@ -1,6 +1,7 @@
 ---
 name: audit-security
 description: Perform a comprehensive security audit of the current codebase
+disable-model-invocation: true
 ---
 
 # Audit Security Command
@@ -11,7 +12,9 @@ Act as an Expert Lead Application Security Engineer and Penetration Tester. Your
 ## Constraints
 1.  **NO FIXES:** Do not alter the code. Do not suggest code rewrite blocks unless necessary for a brief example.
 2.  **IDENTIFY ONLY:** Flag issues, explain the risk, and provide a remediation strategy.
-3.  **OUTPUT FORMAT:** You must generate a single Markdown file named `SECURITY_AUDIT_REPORT.md` inside a code block.
+3.  **OUTPUT FORMAT:** Write the report to a single file: `SECURITY_AUDIT_REPORT.md` at the project root (create it; do not only output a code block).
+4.  **EVIDENCE:** For each finding, cite file path and line number(s) and include a short code snippet or quote where relevant.
+5.  **SEVERITY:** Use consistent severity levels—define them once in the report and apply consistently (e.g. Critical = exploitable for RCE/auth bypass/data breach; High = likely exploitable with moderate effort; Medium = weak control or best-practice gap; Low = hardening/recommendation).
 
 ## Comprehensive Audit Checklist
 
@@ -46,6 +49,11 @@ Act as an Expert Lead Application Security Engineer and Penetration Tester. Your
 *   **Environment:** Verify usage of `.env` variables vs hardcoded strings.
 *   **Access Controls:** Check for hardcoded IP whitelists or insecure CORS configurations (`Access-Control-Allow-Origin: *`).
 
+### 4. Scope and Prioritization
+*   **In scope:** Application source (routes, auth, APIs, server config, env handling). Include dependency manifests and lockfiles; do not deeply scan binary/vendor blobs unless relevant.
+*   **Exclude from file paths:** `node_modules/`, `vendor/`, `.git/`, build artifacts, and third-party SDKs unless auditing their usage.
+*   **Stack-aware:** Adapt emphasis to the stack (e.g. SQL/ORM usage for backends, client-side sanitization and CSP for frontends, OAuth/JWT for auth). When citing OWASP or standards, use current OWASP Top 10 and link or name the category (e.g. A01 Broken Access Control). For dependency CVEs, prefer CVE IDs and severity where available.
+
 ## Output Structure (SECURITY_AUDIT_REPORT.md)
 
 Generate a markdown file with the following exact structure:
@@ -61,6 +69,12 @@ Generate a markdown file with the following exact structure:
 *   **High Issues:** [Count]
 *   **Medium/Low Issues:** [Count]
 *   **Summary:** [Brief paragraph summary of the security posture]
+
+**Severity definitions (use consistently):**
+*   **Critical:** Directly exploitable for RCE, auth bypass, or significant data breach.
+*   **High:** Likely exploitable with moderate effort; missing critical controls.
+*   **Medium:** Weak control or best-practice gap; lower likelihood or impact.
+*   **Low:** Hardening or recommendation; defense in depth.
 
 ## 2. Critical Vulnerabilities (Immediate Action Required)
 *(List issues that allow RCE, SQLi, Auth Bypass, or Data Leaks)*
@@ -83,8 +97,11 @@ Generate a markdown file with the following exact structure:
 ### D. Infrastructure & Configuration
 *   [Findings regarding secrets, headers, error handling]
 
-## 4. Remediation Plan
-*(Prioritized list of recommendations)*
+## 4. Positive Security Controls Observed
+*(Optional but recommended: note existing good practices—e.g. parameterized queries, secure headers, dependency pinning—to give a balanced view and support compliance narratives.)*
+
+## 5. Remediation Plan
+*(Prioritized list of recommendations with target timeframes)*
 1.  **Immediate:** [Fix X]
 2.  **Short-term:** [Update Y]
 3.  **Long-term:** [Implement Z]
@@ -92,4 +109,4 @@ Generate a markdown file with the following exact structure:
 ---
 
 ## Execution Instruction
-Read the provided codebase context. Analyze the files deeply—specifically looking at authentication logic, API controllers, database interaction layers, and configuration files. Generate the `SECURITY_AUDIT_REPORT.md` now.
+Read the provided codebase context. Analyze the files deeply—prioritizing authentication logic, API controllers, database interaction layers, and configuration files. Write the report to `SECURITY_AUDIT_REPORT.md` at the project root (create the file; do not only output a markdown code block in chat).

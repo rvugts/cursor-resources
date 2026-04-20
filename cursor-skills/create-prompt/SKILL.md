@@ -1,14 +1,13 @@
 ---
+name: create-prompt
 description: Create a new prompt that another agent can execute
-argument-hint: [task description]
+disable-model-invocation: true
 ---
 
-> **Credits**: Originally created by [TÂCHES](https://github.com/glittercowboy/taches-cc-resources) for Claude Code. Adapted for Cursor IDE.
-
 <context>
-Before generating prompts, check `./prompts/*.md` to:
+Paths are relative to the workspace root. Before generating prompts, check `./prompts/*.md` to:
 1. Determine if the prompts directory exists
-2. Find the highest numbered prompt to determine next sequence number
+2. Find the highest numbered prompt to determine next sequence number (exclude `./prompts/completed/`—only count files directly in `./prompts/`)
 </context>
 
 <objective>
@@ -47,7 +46,7 @@ Analyze the user's description to extract and infer:
 - **Task type**: Coding, analysis, or research (from context or explicit mention)
 - **Complexity**: Simple (single file, clear goal) vs complex (multi-file, research needed)
 - **Prompt structure**: Single prompt vs multiple prompts (are there independent sub-tasks?)
-- **Execution strategy**: Parallel (independent) vs sequential (dependencies)
+- **Execution strategy**: Multi-prompt flows are sequential only (dependencies; one completes before next)
 - **Depth needed**: Standard vs extended thinking triggers
 
 Inference rules:
@@ -135,9 +134,7 @@ Before generating, determine:
    - Single: Clear dependencies, single cohesive goal, sequential steps
    - Multiple: Independent sub-tasks that could be done separately
 
-2. **Execution Strategy** (if multiple):
-   - Parallel: Independent, no shared file modifications
-   - Sequential: Dependencies, one must finish before next starts
+2. **Execution Strategy** (if multiple): Multi-prompt flows are always sequential (one completes before the next starts). Do not generate parallel execution flows.
 
 3. **Reasoning depth**:
    - Simple → Standard prompt
@@ -173,8 +170,8 @@ Always Include:
 - **Contextual information**: Why this task matters, what it's for, who will use it, end goal
 - **Explicit, specific instructions**: Tell the AI exactly what to do with clear, unambiguous language
 - **Sequential steps**: Use numbered lists for clarity
-- File output instructions using relative paths: `./filename` or `./subfolder/filename`
-- Reference to reading the CLAUDE.md for project conventions
+- File output instructions using relative paths: `./filename` or `./subfolder/filename`; if the prompt writes to a subfolder (e.g. `./analyses/`, `./research/`), instruct the agent to create the folder if it does not exist
+- Reference to reading CLAUDE.md (or similar project conventions file) for project conventions—only if such a file exists in the project; omit if not present
 - Explicit success criteria within `<success_criteria>` or `<verification>` tags
 
 Conditionally Include (based on analysis):
@@ -201,7 +198,7 @@ Output Format:
 
 1. Generate prompt content with XML structure
 2. Save to: `./prompts/[number]-[descriptive-name].md`
-   - Number format: 001, 002, 003, etc. (check existing files in ./prompts/ to determine next number)
+   - Number format: 001, 002, 003, etc. (check existing files in ./prompts/, excluding ./prompts/completed/, to determine next number)
    - Name format: lowercase, hyphen-separated, max 5 words describing the task
    - Example: `./prompts/001-implement-user-authentication.md`
 3. File should contain ONLY the prompt, no explanations or metadata
@@ -368,8 +365,9 @@ Choose (1-4): _
 </presentation>
 
 <action>
-If user chooses #1, invoke the command: `/run-prompt 005`
-If user chooses #2, display the prompt content for review
+If user chooses #1, invoke the skill: `/run-prompt 005`
+If user chooses #2, open the prompt file in the editor for review
+If user chooses #4 (Other), ask what they would like to do next
 </action>
 </single_prompt_scenario>
 
@@ -395,9 +393,10 @@ Choose (1-4): _
 </presentation>
 
 <actions>
-If user chooses #1, invoke the command: `/run-prompt 005 006 007 --sequential`
-If user chooses #2, invoke the command: `/run-prompt 005`
-If user chooses #3, display each prompt for review
+If user chooses #1, invoke the skill: `/run-prompt 005 006 007`
+If user chooses #2, invoke the skill: `/run-prompt 005`
+If user chooses #3, open each prompt file in the editor for review
+If user chooses #4 (Other), ask what they would like to do next
 </actions>
 </sequential_scenario>
 
@@ -420,7 +419,7 @@ If user chooses #3, display each prompt for review
 
 - **Intake first**: Complete step_0_intake_gate before generating. Ask for structured clarification.
 - **Decision gate loop**: Keep asking questions until user selects "Proceed"
-- Check `./prompts/*.md` to find existing prompts and determine next number in sequence
+- Check `./prompts/*.md` (excluding `./prompts/completed/`) to find existing prompts and determine next number in sequence
 - If ./prompts/ doesn't exist, create the first prompt (parent directories will be created automatically)
 - Keep prompt filenames descriptive but concise
 - Adapt the XML structure to fit the task - not every tag is needed every time
@@ -428,6 +427,5 @@ If user chooses #3, display each prompt for review
 - Each prompt file should contain ONLY the prompt content, no preamble or explanation
 - After saving, present the decision tree as inline text
 - For file references in prompts, use @file and @folder syntax
-- When user chooses to run prompts, invoke the `/run-prompt` command with the appropriate prompt numbers and flags
+- When user chooses to run prompts, invoke the `/run-prompt` skill with the appropriate prompt numbers and flags
 </meta_instructions>
-

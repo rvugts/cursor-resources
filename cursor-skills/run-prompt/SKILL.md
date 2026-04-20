@@ -1,10 +1,8 @@
 ---
 name: run-prompt
 description: Delegate one or more prompts to fresh sub-task contexts with parallel or sequential execution
-argument-hint: <prompt-number(s)-or-name>
+disable-model-invocation: true
 ---
-
-> **Credits**: Originally created by [TÂCHES](https://github.com/glittercowboy/taches-cc-resources) for Claude Code. Adapted for Cursor IDE.
 
 <context>
 Git status: Check with `git status --short`
@@ -126,4 +124,3 @@ By delegating to a sub-task (new Composer agent/chat), the actual implementation
 - Provide clear, consolidated results for multiple prompt execution
 - Always use `git add [specific-file]` - never `git add .`
 </critical_notes>
-

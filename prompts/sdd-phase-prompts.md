@@ -36,12 +36,12 @@ Design the architecture for [feature/system] based on the specification:
 - Scalability considerations
 - Security considerations
 
-Create architecture documentation following the @architecture.md template.
+Create architecture documentation (in /docs/ARCHITECTURE.md) using the @ARCHITECTURE.md template
 ```
 
 ## Phase 4: Implementation Planning
 ```
-Create an implementation plan for [feature/system] that includes:
+Create an implementation plan in (/docs/IMPLEMENTATION_STATUS.md) for [feature/system] that includes:
 - Task breakdown
 - Dependencies
 - Estimated effort

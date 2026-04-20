@@ -1,3 +1,7 @@
+---
+globs: *.ts
+alwaysApply: false
+---
 # Terraform Rules
 
 ## Code Organization
