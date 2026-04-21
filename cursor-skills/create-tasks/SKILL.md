@@ -13,13 +13,13 @@ description: >-
 
 Act as a **senior software architect and delivery lead**. Your job is to transform a specification into a set of **atomic, executable tasks** that:
 
-- Can be implemented independently (or with explicit dependencies)
-- Are small enough for an AI agent to execute reliably in 1–3 prompts
-- Have clear inputs, outputs, and acceptance criteria
-- Respect dependencies and logical sequencing
-- Support TDD — tests come before implementation
+- Make **Spec-Driven Development (SDD)** and **Test-Driven Development (TDD)** non-negotiable and explicit.
+- Are small enough for an AI agent to execute reliably in 1–3 prompts.
+- Have clear **inputs, outputs, acceptance criteria**, and **file ownership**.
+- Respect dependencies and logical sequencing.
+- Are **organized for safe parallel execution** whenever possible (different agents, different files, no collisions).
 
-Think in execution order, dependency graphs, risk isolation, and incremental delivery.
+Think in execution order, dependency graphs, file contention, risk isolation, and incremental delivery.
 
 ## Process
 
@@ -32,6 +32,12 @@ If it does not exist, ask:
 > "No active spec found at `docs/specs/spec.md`. Please attach a spec with `@<path>` or describe what needs to be broken down into tasks."
 
 If the user points to a different file (e.g. an archived spec in `docs/specs/`), use that instead.
+
+Also ask (if not already stated):
+
+> "Is there a target delivery window (e.g. 2 hours, 1 day)? And roughly how many agents can run in parallel? I will size waves accordingly."
+
+If the user declines to specify, default to: **no fixed deadline, up to 4 parallel agents**.
 
 ### Phase 2 — Analyze
 
@@ -47,41 +53,64 @@ Read the spec and extract:
 | **Critical dependencies** | What must exist before other work can start |
 | **Risk areas** | Complex logic, security-sensitive code, third-party integrations |
 | **Infrastructure** | Setup, config, CI/CD, deployment (if in spec) |
+| **Invariants** | Architectural rules the spec declares non-negotiable |
+| **Test cases** | TC-IDs, scenarios, acceptance matrices |
+
+### Phase 2b — Plan for parallel execution (MANDATORY)
+
+Before decomposing, plan the concurrency model:
+
+1. **List file/path ownership up front.** For each anticipated task, name the exact files it will create or modify. Two tasks that **write** the same file CANNOT run in parallel — split them.
+2. **Split conflicting tasks.** If two pieces of work naturally target the same file (e.g. an HTTP client vs. a mock client), put them in **different files** so they can run in parallel (e.g. `github_client.py` vs. `mock_github_client.py`).
+3. **Serialize on purpose.** If a file is genuinely a single concern (e.g. a router file), keep its tasks in a **single agent track** and mark them sequential.
+4. **Minimise dependencies.** Question each dependency — would reading the spec alone be enough? Frontend and infra tasks often only need the spec contract, not the backend implementation.
+5. **Size waves to the agent budget.** Group tasks into waves of ≤ N parallel agents (N from Phase 1). Each wave unblocks the next.
 
 ### Phase 3 — Decompose
 
 Break the work into tasks using these principles:
 
 **Atomicity**
-- Each task has a single responsibility
-- Completable in 1–3 focused prompts
-- No multi-concern logic (e.g. "build the entire API" is not a task)
+- Each task has a single responsibility.
+- Completable in 1–3 focused prompts.
+- No multi-concern logic (e.g. "build the entire API" is not a task).
 
 **Dependency awareness**
-- Identify prerequisite tasks explicitly
-- Order tasks so each can be started when its dependencies are done
-- No circular dependencies
+- Identify prerequisite tasks explicitly.
+- Order tasks so each can be started when its dependencies are done.
+- No circular dependencies.
 
-**Testability**
-- Each task produces something testable
-- Test-writing tasks come before or alongside implementation tasks (TDD)
-- Acceptance criteria map back to spec requirements
+**Testability (TDD)**
+- For every functional task, there is a paired **RED test task** that runs first, followed by a **GREEN implementation task**. Refactor is implicit in the GREEN task's acceptance criteria (`ruff`/`mypy`/equivalent clean).
+- For architectural invariants, create a dedicated **fitness test task**.
+
+**File ownership & parallelism**
+- Each file has **one exclusive writer** at a time.
+- Tasks that share an owned file belong to the same agent's **serialized track**.
+- Where possible, split tasks so they own disjoint files and can run in parallel.
 
 **AI suitability**
-- Tasks are unambiguous — no "figure out the best approach"
-- Each task can be executed with limited context (the spec section + prior outputs)
-- Avoid tasks that require understanding the full system to complete
+- Tasks are unambiguous — no "figure out the best approach".
+- Each task can be executed with limited context (the spec section + prior outputs + owned files).
 
 ### Phase 4 — Confirm
 
-Present a summary before generating:
+Present a summary before generating. The summary MUST include:
 
-> "I've analyzed the spec and identified [N] tasks across [categories]. The critical path is: [brief chain]. Ready to generate the task list?"
+> "I've analyzed the spec and identified **[N] tasks** across **[categories]**.
+>
+> **Critical path:** [brief chain, e.g. T1 → T2 → T7 → T13].
+>
+> **Parallel plan:** [W] waves sized for [N_agents] agents in parallel, target duration [if given].
+>
+> **Non-negotiables embedded:** SDD (spec is single source of truth, every commit cites spec), TDD (RED → GREEN → REFACTOR, no skip/xfail, coverage floor).
+>
+> Ready to generate the task list?"
 
 Options:
-- **Proceed** — generate the task file
-- **Adjust** — user wants to add/remove/reorder
-- **Ask questions** — clarify ambiguities in the spec first
+- **Proceed** — generate the task file.
+- **Adjust** — user wants to add/remove/reorder tasks or change waves.
+- **Ask questions** — clarify ambiguities in the spec first.
 
 Do NOT generate the file until the user confirms. If Cursor is in **Plan Mode**, stay read-only until the user switches back to Agent Mode and confirms; only then write `docs/specs/tasks.md`.
 
@@ -89,9 +118,9 @@ Do NOT generate the file until the user confirms. If Cursor is in **Plan Mode**,
 
 State:
 
-> "Generating [N] tasks for: [spec name]"
+> "Generating [N] tasks in [W] waves for: [spec name]"
 
-Then write the task file.
+Then write the task file using the template in **Task File Structure** below.
 
 **Do not generate implementation code.** Produce only the task breakdown as markdown. No application source, tests, or configs.
 
@@ -105,15 +134,15 @@ This places the task breakdown next to the spec it decomposes (`docs/specs/spec.
 
 If `docs/specs/tasks.md` already exists:
 
-1. Read the existing file
-2. Rename it to `docs/specs/tasks-{spec-name}.md` where `{spec-name}` is the `name` from the active spec's YAML frontmatter at the time the tasks were created (if discoverable from the file content or the current `docs/specs/spec.md`)
+1. Read the existing file.
+2. Rename it to `docs/specs/tasks-{spec-name}.md` where `{spec-name}` is the `name` from the active spec's YAML frontmatter at the time the tasks were created (if discoverable from the file content or the current `docs/specs/spec.md`).
 3. If that archive name already exists, append a numeric suffix: `-2`, `-3`, etc.
-4. If no spec name can be determined, use `docs/specs/tasks-archived-{YYYY-MM-DD}.md`
-5. Generate the new `docs/specs/tasks.md`
+4. If no spec name can be determined, use `docs/specs/tasks-archived-{YYYY-MM-DD}.md`.
+5. Generate the new `docs/specs/tasks.md`.
 
 ## Task File Structure
 
-The generated file MUST use this format:
+The generated file MUST include **all** sections below, in this order. Sections marked **MANDATORY** may not be omitted even for simple specs — tailor depth, not presence.
 
 ```markdown
 # Implementation Tasks
@@ -121,69 +150,132 @@ The generated file MUST use this format:
 **Spec:** docs/specs/spec.md
 **Generated:** YYYY-MM-DD
 **Total tasks:** [N]
+**Target delivery:** [if provided, e.g. "2 hours wall-clock using parallel agents" — otherwise "open-ended"]
 
 ---
 
-## Completion Protocol (applies to every task)
+## 0. Non-negotiable operating principles [MANDATORY]
 
-After each task is completed, **before moving on to the next task**, the executing agent MUST:
+These rules apply to every task. Agents MUST restate the relevant rule when it governs a change.
 
-1. Verify every item under **Acceptance criteria** is satisfied (tests pass, files exist, behavior matches spec).
-2. Update **`docs/IMPLEMENTATION_STATUS.md`**:
-   - Mark this task's checkbox under the appropriate component as `- [x]`.
-   - Update the component's **Status** and **Progress %** (use the Status Legend: ✅ Complete, 🚧 In Progress, 📋 Planned, ⚠️ Blocked, ❌ Cancelled).
-   - Refresh **Last Updated** with today's date.
-   - Refresh the top-level **Overview** table and **Metrics** section (Overall Progress, Components Complete, Tasks Remaining).
-   - Record any new blockers, decisions, or deviations from the spec under **Notes** / **Blockers**.
-3. If `docs/IMPLEMENTATION_STATUS.md` does not yet exist, create it from `templates/IMPLEMENTATION_STATUS.md` before updating — seed it with one entry per component inferred from the task list.
-4. Commit or stage the status update alongside the task's code changes so the status file is never out of sync with the codebase.
+### 0.1 Spec-Driven Development (SDD) — non-negotiable
 
-A task is **not considered done** until `docs/IMPLEMENTATION_STATUS.md` has been updated and reflects the new state.
+1. `docs/specs/spec.md` is the single source of truth. No behavior, schema, error code, version, or constraint is valid unless it can be cited to a section of that spec.
+2. Never invent scope. Out-of-scope items and open questions MUST NOT be implemented. Stop and ask if reality diverges from the spec.
+3. Trace everything. Each task has a Spec reference; each commit MUST cite at least one spec section (e.g. `refs spec §4.3, FR-6`). Tests MUST map to TC-IDs or to the functional/invariant ID they exercise.
+4. Amend before drift. If a gap is discovered, stop, note it in the PR as a spec-change request, and continue only after the spec is updated.
+
+### 0.2 Test-Driven Development (TDD) — non-negotiable
+
+All functional / core-logic tasks MUST follow RED → GREEN → REFACTOR:
+
+1. RED — write the failing test first (the test runner shows it fail for the right reason, not an import error).
+2. GREEN — write the minimum implementation needed to pass the failing test.
+3. REFACTOR — clean up while keeping tests green; linter and type-checker must remain clean.
+
+Non-negotiable TDD rules:
+
+- No production code without a failing test first.
+- Fitness / architecture tests count as tests; invariants MUST have assertions.
+- Don't silence tests (no `skip`/`xfail`/broad `try/except` in tests/commented-out assertions to make CI green).
+- Coverage floor [X%] (enforced in CI). Coverage is a floor, not a ceiling.
+- Determinism: no real network in tests; no time-of-day assertions; fixtures are stable.
+
+Each task below declares a TDD step (RED / GREEN / REFACTOR / N/A).
+
+### 0.3 Architectural invariants [if the spec declares any]
+
+| ID | Rule | Owned by |
+|----|------|----------|
+| INV-xxx | ... | Task N, verified by Task M |
 
 ---
 
-## Execution Order
+## 1. Parallel execution plan [MANDATORY]
 
-1. Task 1: [Title]
-2. Task 2: [Title]
-3. Task 3: [Title]
+### 1.1 Wave overview
+
+| Wave | Duration | Agents in parallel | Tasks |
+|------|----------|--------------------|-------|
+| **Wave 0 — Foundation** | ~X min | 1 | T1 |
+| **Wave 1 — …** | ~X min | up to N | T2, T3, ... |
+| ... |
+
+### 1.2 File-ownership matrix (prevents parallel collisions) [MANDATORY]
+
+Each path MUST be written by at most one agent at a time. Read-only access is unrestricted.
+
+| Path | Exclusive owner tasks (in order) |
+|------|----------------------------------|
+| `path/to/file` | T2 |
+| `path/to/shared_file.py` | T7 → T9 → T10 (same agent track) |
+
+### 1.3 Dependency graph (summary)
+
+ASCII or Mermaid diagram showing task dependencies at a glance.
+
+---
+
+## 2. Execution order (single-agent fallback)
+
+1. T1: [Title]
+2. T2: [Title]
 ...
 
 ---
 
-## Tasks
+## 3. Tasks
 
-### Task 1: [Title]
+### Task N: [Title]
 
 **Category:** [Setup | Data Model | Core Logic | Validation | API/Interface | Integration | Testing | Infrastructure | Documentation | Refactoring]
+**Wave:** [0..W] · **Est.:** [minutes] · **TDD step:** [RED | GREEN | REFACTOR | RED then GREEN | N/A]
 
 **Description:**
 What needs to be done.
 
 **Spec reference:**
-Which section(s) of the spec this task implements (e.g. "Section 3.1 FR-1, Section 4.1 Scenario 1").
+Which section(s) of the spec this task implements (e.g. "§3.1 FR-1, §4.1 Scenario 1, INV-003").
 
 **Inputs:**
-- What this task depends on (files, artifacts, prior task outputs)
+- Prior task outputs or files this task reads.
+- `@docs/specs/spec.md` sections to attach.
 
-**Outputs:**
-- Files or artifacts this task produces (use relative paths)
+**Owns files:**
+- Exact paths this task will create or modify. No other task in the same wave may write these.
+
+**Reads files:**
+- Paths this task reads but does not modify.
+
+**Parallelizable with:**
+- List of task IDs that can run at the same time as this one (different owners and no dependency).
+
+**Blocks:**
+- List of task IDs that cannot start until this one is complete.
 
 **Acceptance criteria:**
-- [ ] Specific, testable condition 1
-- [ ] Specific, testable condition 2
-- [ ] `docs/IMPLEMENTATION_STATUS.md` updated per the **Completion Protocol** (task checkbox ticked, component status/progress, Overview table, Metrics, Last Updated)
+- [ ] Specific, testable condition 1 (cite TC-ID or spec requirement).
+- [ ] Specific, testable condition 2.
 
 **Dependencies:**
 - None | Task N, Task M
 
 **Prompt hint:**
-One-line suggestion for what to ask the Cursor Agent (or pass to the `/create-prompt` skill) when executing this task. Prefer Cursor-native context references — e.g. `@docs/specs/spec.md`, `@src/…`, `@docs/ARCHITECTURE.md` — so the executing agent pulls in the exact files it needs without extra round-trips. End the hint with: "then update `@docs/IMPLEMENTATION_STATUS.md` per the Completion Protocol."
+One-line suggestion for what to ask the Cursor Agent (or pass to the `/create-prompt` skill). Prefer Cursor-native context references — e.g. `@docs/specs/spec.md`, `@src/…`, `@docs/ARCHITECTURE.md` — so the executing agent pulls in the exact files it needs without extra round-trips.
 
 ---
-```
 
-> **Important:** The **Completion Protocol** section and the status-update acceptance-criteria line must be present in every generated `tasks.md` — they are not optional, regardless of spec complexity. They are what keep `docs/IMPLEMENTATION_STATUS.md` authoritative across long TDD/SDD runs.
+## 4. Spec coverage cross-check [MANDATORY]
+
+| Spec item | Covered by tasks |
+|-----------|------------------|
+| FR-1 … | T2, T13, T14 |
+| ... | ... |
+| INV-001 … | T7, T15 |
+| TC-U-01 … | T6 |
+
+Every FR, NFR, invariant, and TC in the spec MUST appear in at least one task. Orphaned items indicate incomplete coverage — revise before committing.
+```
 
 ## Task Categories
 
@@ -197,21 +289,23 @@ Use these categories to classify each task:
 | **Validation** | Input validation, business rule enforcement, constraints |
 | **API / Interface** | Endpoints, CLI commands, library exports, UI components |
 | **Integration** | External services, message queues, third-party APIs |
-| **Testing** | Test suites, fixtures, test data, coverage verification |
+| **Testing** | Test suites, fixtures, test data, coverage verification, fitness tests |
 | **Infrastructure** | Deployment, environment config, monitoring, secrets |
 | **Documentation** | API docs, README updates, docstrings, architecture diagrams |
 | **Refactoring** | Code cleanup after initial implementation |
 
 ## Sequencing Rules
 
-1. **Setup first** — project scaffolding and config before any code
-2. **Data model before logic** — entities and schemas before business rules
-3. **Tests alongside implementation** — for each functional task, include or reference the corresponding test task (TDD: write test → implement → refactor)
-4. **Core before edge** — happy path first, then validation and error handling
-5. **Interface after logic** — API/CLI/UI tasks depend on the logic they expose
-6. **Integration late** — external service integrations after core logic is stable
-7. **Documentation and refactoring last** — final polish after functionality is complete
-8. **Infrastructure as needed** — CI/CD and deployment tasks can be early (if blocking) or late (if non-blocking)
+1. **Setup first** — project scaffolding and config before any code.
+2. **Data model before logic** — entities and schemas before business rules.
+3. **Tests before implementation (TDD)** — every functional task is preceded by a RED test task or carries its own explicit RED → GREEN split.
+4. **Core before edge** — happy path first, then validation and error handling.
+5. **Interface after logic** — API/CLI/UI tasks depend on the logic they expose, unless the interface is purely contract-driven (e.g. a frontend that only needs the spec's API schema — those can run earlier).
+6. **Integration late** — external service integrations after core logic is stable.
+7. **Documentation and refactoring last** — final polish after functionality is complete.
+8. **Infrastructure as needed** — CI/CD and deployment tasks can be early (if blocking) or late (if non-blocking).
+9. **File-ownership rule** — no two tasks in the same wave write the same file. If they must, split files or serialize the tasks.
+10. **Minimise dependencies** — only add a dependency when the task genuinely cannot start without it. Question every "needs T-X" — maybe it only needs the spec.
 
 ## Complexity Scaling
 
@@ -219,47 +313,52 @@ Scale the number and granularity of tasks to the spec's complexity:
 
 | Spec complexity | Typical task count | Granularity |
 |----------------|-------------------|-------------|
-| **Simple** (3–5 requirements) | 5–10 tasks | One task per requirement + setup + tests |
-| **Moderate** (5–15 requirements) | 10–25 tasks | Requirements split into model/logic/interface + dedicated test tasks |
-| **Complex** (15+ requirements) | 25–50 tasks | Fine-grained: separate tasks for schemas, migrations, individual endpoints, error handling, security, performance |
+| **Simple** (3–5 requirements) | 5–10 tasks | One task per requirement + setup + tests. §0 may be brief but still present. |
+| **Moderate** (5–15 requirements) | 10–25 tasks | Requirements split into model/logic/interface + dedicated test tasks. Full §0 and §1. |
+| **Complex** (15+ requirements) | 25–50 tasks | Fine-grained: separate tasks for schemas, migrations, individual endpoints, error handling, security, performance. Deep wave structure. |
 
 ## Intelligence Rules
 
-1. **Smaller is better** — prefer more small tasks over fewer large ones; a task that needs "just one more thing" is two tasks
-2. **Respect dependencies** — incorrect ordering breaks the entire plan; when in doubt, add an explicit dependency
-3. **Design for failure isolation** — risky tasks (third-party integrations, complex algorithms) should be isolated so a failure doesn't block unrelated work
-4. **Optimize for AI execution** — each task should be completable by an agent given only the spec section, this task description, and the outputs of dependency tasks
-5. **Avoid ambiguity** — every task must have concrete outputs and testable acceptance criteria; "improve performance" is not a task, "add database index on users.email and verify query time < 50ms" is
-6. **Map back to spec** — every spec requirement must appear in at least one task's spec reference; orphaned requirements mean incomplete coverage
-7. **TDD by default** — for each functional task, either include test criteria directly or create a paired test task that precedes the implementation task
+1. **Smaller is better** — prefer more small tasks over fewer large ones; a task that needs "just one more thing" is two tasks.
+2. **Respect dependencies** — incorrect ordering breaks the entire plan; when in doubt, add an explicit dependency.
+3. **Design for failure isolation** — risky tasks (third-party integrations, complex algorithms) should be isolated so a failure doesn't block unrelated work.
+4. **Optimize for AI execution** — each task should be completable by an agent given only the spec section, this task description, the task's owned files, and the outputs of dependency tasks.
+5. **Avoid ambiguity** — every task must have concrete outputs and testable acceptance criteria; "improve performance" is not a task, "add database index on users.email and verify query time < 50ms" is.
+6. **Map back to spec** — every spec requirement must appear in at least one task's spec reference; orphaned requirements mean incomplete coverage (see §4 cross-check).
+7. **TDD by default** — for each functional task, either include a RED → GREEN split directly or create a paired RED test task that precedes the implementation task.
+8. **Plan for parallelism** — the default plan is **parallel-first**; serialize only when file ownership or a real dependency forces it.
+9. **Split conflicting tasks into disjoint files** — rename modules if needed (e.g. `client.py` → `mock_client.py` + `http_client.py`) to unlock parallelism.
 
 ## Anti-Patterns
 
 Do NOT create tasks that:
 
-- Span multiple unrelated concerns (e.g. "build and deploy the entire API")
-- Have no concrete outputs or acceptance criteria
-- Require understanding the full system to complete
-- Cannot be tested independently
-- Duplicate work already covered by another task
-- Are vague directives ("make it production-ready", "handle all edge cases")
+- Span multiple unrelated concerns (e.g. "build and deploy the entire API").
+- Have no concrete outputs or acceptance criteria.
+- Require understanding the full system to complete.
+- Cannot be tested independently.
+- Duplicate work already covered by another task.
+- Are vague directives ("make it production-ready", "handle all edge cases").
+- Write the same file as another task in the same wave (file-ownership violation).
+- Carry a false dependency that was copy-pasted rather than justified.
 
 ## Execution Checklist
 
 Before delivering the task file, verify:
 
-- [ ] No implementation code generated — only the task breakdown
-- [ ] Every spec requirement is covered by at least one task (cross-reference spec sections)
-- [ ] Every task has: category, description, spec reference, inputs, outputs, acceptance criteria, dependencies
-- [ ] No circular dependencies
-- [ ] Execution order respects all dependency chains
-- [ ] Test tasks exist for all functional work (TDD)
-- [ ] Setup tasks come first; documentation and refactoring come last
-- [ ] Prompt hints are included to support the `/create-prompt` → `/run-prompt` workflow in Cursor
-- [ ] Prompt hints end with the `docs/IMPLEMENTATION_STATUS.md` update instruction
-- [ ] **Completion Protocol** section is present and unedited at the top of the file
-- [ ] Every task's **Acceptance criteria** includes the `docs/IMPLEMENTATION_STATUS.md` update checkbox
-- [ ] Task count is proportional to spec complexity
+- [ ] No implementation code generated — only the task breakdown.
+- [ ] §0 Non-negotiable TDD + SDD preamble is present and concrete (not hand-wavy).
+- [ ] §1 Parallel execution plan is present with wave table, **file-ownership matrix**, and dependency graph.
+- [ ] §4 Spec coverage cross-check maps every FR / NFR / invariant / TC-ID to at least one task.
+- [ ] Every task has: category, wave, est., TDD step, description, spec reference, inputs, **owns files**, reads files, **parallelizable with**, **blocks**, acceptance criteria, dependencies, prompt hint.
+- [ ] No two tasks in the same wave write the same owned file.
+- [ ] No circular dependencies.
+- [ ] Single-agent execution order (§2) is consistent with the parallel plan (§1).
+- [ ] Test tasks exist (RED) before implementation tasks (GREEN) for all functional work.
+- [ ] Setup tasks come first; documentation and refactoring come last.
+- [ ] Prompt hints use `@path` references so the executing agent loads exact context.
+- [ ] Task count is proportional to spec complexity.
+- [ ] Estimated durations sum, per wave, to fit the user's stated budget (if any), plus buffer.
 
 ## Cursor Integration
 
@@ -270,12 +369,11 @@ This skill is designed to plug into the rest of the Cursor SDD workflow in this 
 | Draft the spec | `/create-spec` (writes `docs/specs/spec.md`) |
 | Decompose into tasks | `/create-tasks` (this skill — writes `docs/specs/tasks.md`) |
 | Author prompts for each task | `/create-prompt` — use the task's **Prompt hint** and `@docs/specs/spec.md` + `@docs/specs/tasks.md` as context; saves numbered files under `./prompts/` |
-| Execute tasks | `/run-prompt` — runs one or more prompts from `./prompts/` sequentially |
-| Track progress | `docs/IMPLEMENTATION_STATUS.md` — updated by the executing agent after every task (see **Completion Protocol** in the generated `tasks.md`). Seed from `@templates/IMPLEMENTATION_STATUS.md` if missing. |
+| Execute tasks | `/run-prompt` — runs one or more prompts from `./prompts/` sequentially, or dispatches parallel waves per §1 of `tasks.md` |
 
 Notes for best results in Cursor:
 
 - **Use `@` to attach context.** When a task depends on specific files, write the **Prompt hint** with concrete `@path` references so the executing agent loads them automatically.
 - **Prefer Plan Mode for Phase 4 confirmation.** It keeps the session read-only until you explicitly approve generation.
-- **Keep artifacts co-located.** Both `spec.md` and `tasks.md` live under `docs/specs/` so they can be attached together via `@docs/specs/`. The status file deliberately lives one level up at `docs/IMPLEMENTATION_STATUS.md` — it is project-wide, not spec-specific, and survives spec archival.
-- **Status file is the source of truth for progress.** Do not rely on chat history or memory — every task closes with an update to `docs/IMPLEMENTATION_STATUS.md` so a fresh Cursor session can resume work from the status file alone.
+- **Keep artifacts co-located.** Both `spec.md` and `tasks.md` live under `docs/specs/` so they can be attached together via `@docs/specs/`.
+- **Parallel runs.** When the user has multiple agents available, dispatch whole waves in parallel per the §1 plan rather than strictly following the §2 linear order.
