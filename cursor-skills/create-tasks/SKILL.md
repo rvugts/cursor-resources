@@ -124,6 +124,16 @@ Then write the task file using the template in **Task File Structure** below.
 
 **Do not generate implementation code.** Produce only the task breakdown as markdown. No application source, tests, or configs.
 
+### Phase 6 — Optional prompt-pack generation (NEW)
+
+After `docs/specs/tasks.md` is generated, ask:
+
+> "Generate execution prompt files now under `./prompts/`? (yes/no)"
+
+If user says **yes**, generate one prompt file per task using the structure and rules below.
+
+If user says **no**, stop after `tasks.md`.
+
 ## Output
 
 Generate ONE file: `docs/specs/tasks.md`
@@ -139,6 +149,16 @@ If `docs/specs/tasks.md` already exists:
 3. If that archive name already exists, append a numeric suffix: `-2`, `-3`, etc.
 4. If no spec name can be determined, use `docs/specs/tasks-archived-{YYYY-MM-DD}.md`.
 5. Generate the new `docs/specs/tasks.md`.
+
+If Phase 6 is approved by the user, additionally generate prompt files under:
+
+- `prompts/01-<task-id>-<short-name>.md`
+- `prompts/02-<task-id>-<short-name>.md`
+- ...
+
+Use zero-padded numbering in **Section 2 execution order** from `tasks.md`. Include wave/parallel info inside each prompt body.
+
+If prompt files already exist for the same task IDs, overwrite them.
 
 ## Task File Structure
 
@@ -277,6 +297,77 @@ One-line suggestion for what to ask the Cursor Agent (or pass to the `/create-pr
 Every FR, NFR, invariant, and TC in the spec MUST appear in at least one task. Orphaned items indicate incomplete coverage — revise before committing.
 ```
 
+## Prompt Pack Structure (for Phase 6)
+
+When generating `./prompts` files, each prompt MUST include sections in this exact order:
+
+```markdown
+# <Wave/Track if applicable> - <Agent placeholder> - Task <ID> (<TDD step/category summary>)
+
+You are executing **Task <ID>** from `docs/specs/tasks.md`.
+
+## Global execution instruction
+**You need to activate the .venv virtual environment to run pytest**.
+
+## Mission
+<1-2 sentence objective aligned to task Description>
+
+## Required context
+Attach:
+- `@docs/specs/spec.md`
+- `@docs/specs/tasks.md`
+- <task-specific @paths from Owns files + Reads files>
+
+## Scope (must do)
+- <concrete checklist from Description + Acceptance criteria>
+
+## Constraints
+- <only edit owned files>
+- <TDD mode constraints for RED/GREEN/REFACTOR/N/A>
+- <no out-of-scope changes>
+
+## Deliverable
+- <exact files/outcomes expected>
+
+## Definition of done
+- <acceptance outcomes mapped from task Acceptance criteria>
+- <verification command(s) relevant to the task>
+```
+
+### Prompt generation fidelity rules
+
+1. Use task metadata directly from `tasks.md` (Category, Wave, Est., TDD step, Owns files, Reads files, Dependencies, Acceptance criteria).
+2. Do not invent scope, files, or dependencies.
+3. Preserve FR/NFR/INV/TC references where present.
+4. For `RED` tasks, explicitly instruct "write failing tests first; do not implement production code."
+5. For `GREEN` tasks, explicitly instruct "implement minimum code to satisfy failing tests."
+6. For `REFACTOR` tasks, explicitly instruct "refactor only with tests green."
+7. Include wave/parallel hints in prompt headers/bodies.
+
+### Prompt generation strict mode (MANDATORY)
+
+Before generating any prompt files, validate every task in Section 3 has:
+
+- `Owns files`
+- `Acceptance criteria`
+- `TDD step`
+- `Spec reference`
+
+If any are missing or empty:
+
+1. STOP prompt generation.
+2. Report which Task IDs are incomplete and which required fields are missing.
+3. Instruct the user to fix `docs/specs/tasks.md` first (or ask the agent to repair it).
+4. Resume prompt generation only after validation passes.
+
+### Prompt-pack completion report
+
+After prompt generation, output:
+
+- Total prompt files created
+- Mapping table: Task ID -> prompt filename
+- Suggested execution plan by wave (parallel batches)
+
 ## Task Categories
 
 Use these categories to classify each task:
@@ -359,6 +450,8 @@ Before delivering the task file, verify:
 - [ ] Prompt hints use `@path` references so the executing agent loads exact context.
 - [ ] Task count is proportional to spec complexity.
 - [ ] Estimated durations sum, per wave, to fit the user's stated budget (if any), plus buffer.
+- [ ] If user approved Phase 6, prompt files were generated under `./prompts` using the required structure.
+- [ ] Every generated prompt includes the exact `.venv` activation instruction.
 
 ## Cursor Integration
 
@@ -368,7 +461,7 @@ This skill is designed to plug into the rest of the Cursor SDD workflow in this 
 |------|-------------------------|
 | Draft the spec | `/create-spec` (writes `docs/specs/spec.md`) |
 | Decompose into tasks | `/create-tasks` (this skill — writes `docs/specs/tasks.md`) |
-| Author prompts for each task | `/create-prompt` — use the task's **Prompt hint** and `@docs/specs/spec.md` + `@docs/specs/tasks.md` as context; saves numbered files under `./prompts/` |
+| Author prompts for each task | `/create-tasks` Phase 6 (optional auto-generation) or `/create-prompt` manually using task **Prompt hint**; saves numbered files under `./prompts/` |
 | Execute tasks | `/run-prompt` — runs one or more prompts from `./prompts/` sequentially, or dispatches parallel waves per §1 of `tasks.md` |
 
 Notes for best results in Cursor:
