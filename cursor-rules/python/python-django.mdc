@@ -4,7 +4,7 @@ alwaysApply: false
 ---
 # Senior Python Developer - Django and PostgreSQL
 
-You are an expert Senior Python Developer specializing in building scalable, production-grade web applications using **Django**, **Django REST Framework (DRF)**, and **PostgreSQL**.
+Project conventions and existing toolchain configuration override these defaults unless unsafe.
 
 ## 1. Code Structure & Constraints
 *   **Line Length:** Limit lines to **100 characters**.
@@ -48,12 +48,11 @@ You are an expert Senior Python Developer specializing in building scalable, pro
 *   **Templates:** `app_name/model_action.html` (e.g., `orders/order_detail.html`).
 *   **Class-Based Views:** Suffix with `View` (e.g., `OrderDetailView`, `UserListView`).
 
-## 4. Documentation (Sphinx/reStructuredText)
-*   **Format:** Use reStructuredText (reST) for all docstrings.
-*   **Module Docstring:**
-    *   Must explain the purpose of the file.
-    *   **CRITICAL REQUIREMENT:** Must include a `Dependencies:` section listing major libraries used.
-*   **Class/Function Docstrings:** Mandatory for every class and public function. Explain purpose, arguments, and return values clearly. For non-public methods explain the purpose.
+## 4. Documentation
+
+*   Use the project's existing docstring convention. Default to reStructuredText (reST) for Python libraries when no convention exists.
+*   Public modules, classes, and functions require docstrings when they form a public API, contain non-obvious behavior, or cross an architectural boundary.
+*   Docstrings explain purpose, arguments, return values, raised errors, and important constraints. Skip argument types in prose when type hints already express them.
 
 ## 5. Django Architecture & Best Practices
 

@@ -4,7 +4,7 @@ alwaysApply: false
 ---
 # Senior Python Developer
 
-You are an expert Senior Python Developer specializing in clean, maintainable, and efficient code with a strong focus on **Spec-Driven Development (SSD)** and **Test-Driven Development (TDD)**.
+Project conventions and existing toolchain configuration override these defaults unless unsafe.
 
 ## 0. Methodology: Test Driven Development (TDD)
 **Mandatory Workflow:**
@@ -121,12 +121,11 @@ You are an expert Senior Python Developer specializing in clean, maintainable, a
 *   **Avoid:** Single-letter variables except for loop counters (`i`, `j`, `k`) or mathematical variables (`x`, `y`, `z`).
 *   **Pluralization:** Use plural for collections (`users`, `items`), singular for single items (`user`, `item`).
 
-## 6. Documentation (Sphinx/reStructuredText)
-*   **Format:** Use reStructuredText (reST) for all docstrings.
-*   **Module Docstring:**
-    *   Must explain the purpose of the file.
-    *   **CRITICAL REQUIREMENT:** Must include a `Dependencies:` section listing major libraries used. *Exception*: __init__.py files
-    **Class/Function Docstrings:** Mandatory for every class and public function. Explain purpose, arguments, and return values clearly. Skip the type of arguments. For non-public methods explain the purpose.
+## 6. Documentation
+
+*   Use the project's existing docstring convention. Default to reStructuredText (reST) for Python libraries when no convention exists.
+*   Public modules, classes, and functions require docstrings when they form a public API, contain non-obvious behavior, or cross an architectural boundary.
+*   Docstrings explain purpose, arguments, return values, raised errors, and important constraints. Skip argument types in prose when type hints already express them.
 
 ## 7. Security & Best Practices
 *   **Code Injection:** NO usage of `eval()`, `exec()`, or unsafe YAML loading.

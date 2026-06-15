@@ -1,18 +1,22 @@
 ---
-globs: *.ts
+globs: "**/*.tf,**/*.tfvars"
 alwaysApply: false
 ---
 # Terraform Rules
 
+Project conventions and existing toolchain configuration override these defaults unless unsafe.
+
 ## Code Organization
 - Use modules for reusable components
 - Separate environments (dev, staging, prod)
-- Use workspaces or separate state files per environment
+- Prefer separate state per environment for real infrastructure. Use workspaces only when the project has already standardized on them.
 - Keep resource definitions in logical files
 
 ## Best Practices
 - Use variables for all configurable values
 - Use outputs for important resource attributes
+- Document variables and outputs with `description`
+- Mark outputs as `sensitive = true` when they expose secrets, tokens, or credentials
 - Implement proper state management
 - Use remote state backends (S3, etc.)
 - Version lock provider versions
@@ -37,10 +41,12 @@ alwaysApply: false
 - Backup state files regularly
 - Use terraform import for existing resources
 - Avoid manual state file edits
+- Commit `.terraform.lock.hcl` unless the project intentionally manages provider locks another way
 
 ## Testing
-- Use terraform validate for syntax checking
-- Use terraform plan to preview changes
+- Use `terraform fmt` for formatting
+- Use `terraform validate` for syntax checking
+- Use `terraform plan` to preview changes
+- Run `tflint`, `tfsec`, `checkov`, or the project's configured IaC scanners when available
 - Test in non-production environments first
-- Use terraform fmt for formatting
 - Review changes in pull requests

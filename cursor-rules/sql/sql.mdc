@@ -1,0 +1,55 @@
+---
+globs: "**/*.sql"
+alwaysApply: false
+---
+# SQL Rules
+
+Portable SQL standards with PostgreSQL-specific guidance where noted. Project conventions and existing toolchain configuration override these defaults unless unsafe.
+
+## Query Safety
+- **Parameterized queries only** — never concatenate user input into SQL strings
+- In application code, keep raw SQL in repository/data-access layers unless the project defines another boundary
+- Prefer ORM query builders when the project already uses them
+- For hand-written SQL, use bound parameters (`$1`, `$2` in PostgreSQL; `%s` with driver parameterization in Python)
+
+## Schema Design
+- Follow the project's naming convention. Default to `snake_case` plural table names when no convention exists
+- Column names: `snake_case`, descriptive (`created_at`, `is_active`, `user_id`)
+- Primary keys: explicit (`id` or domain-specific surrogate). Use `UUID` when distributed IDs are required
+- Foreign keys: define explicitly with `ON DELETE` / `ON UPDATE` behaviour documented
+- Use appropriate types — `timestamptz` for timestamps, `numeric` for money, `text` over `varchar` unless length limits are required
+- Add `NOT NULL` and `DEFAULT` constraints deliberately; avoid nullable columns without reason
+
+## Indexes and Performance
+- Index foreign keys and columns used in `WHERE`, `JOIN`, and `ORDER BY` on hot paths
+- Prefer composite indexes that match query filter order
+- Use `EXPLAIN (ANALYZE, BUFFERS)` to validate slow queries before optimizing (PostgreSQL)
+- Avoid `SELECT *` in application queries — select only needed columns
+- Use transactions for multi-statement operations that must succeed or fail together
+
+## Migrations
+- One logical change per migration file
+- Migrations must be reversible when the toolchain supports down/rollback scripts
+- Never edit applied migration history in shared environments — add a new migration instead
+- Test migrations against a copy of production-like data when possible
+- Destructive changes require explicit review and backfill strategy
+- For large PostgreSQL tables, prefer `CREATE INDEX CONCURRENTLY` to avoid long write locks
+- For existing large tables, add constraints as `NOT VALID` first, then `VALIDATE CONSTRAINT` in a separate step when appropriate
+- Avoid long-lock migrations; split schema changes, data backfills, and destructive cleanup into separate deployable steps
+
+## Security
+- Least-privilege DB roles: application role without superuser; separate migration/admin role if needed
+- No secrets in SQL files or migration scripts
+- Row-level security (RLS) where multi-tenant isolation is required (PostgreSQL)
+- Grant only required privileges per role
+
+## Testing
+- Use a dedicated test database — never production
+- Wrap tests in transactions with rollback, or use isolated schemas per test run
+- Test constraints, unique indexes, and migration up/down paths
+
+## PostgreSQL
+- Use `jsonb` (not `json`) when querying JSON fields
+- Prefer `GENERATED ALWAYS AS` columns for derived values when appropriate
+- Use advisory locks or `SELECT ... FOR UPDATE` for concurrency-sensitive operations
+- Connection pooling at the application layer (`pg.Pool`, SQLAlchemy pool settings)

@@ -11,6 +11,8 @@ Recent prompts: Check with `ls -t ./prompts/*.md | head -5`
 
 <objective>
 Execute one or more prompts from `./prompts/` as delegated sub-tasks with fresh context. Supports single prompt execution and sequential execution of multiple prompts.
+
+Project conventions and existing toolchain configuration override these defaults unless unsafe.
 </objective>
 
 <input>

@@ -4,7 +4,7 @@ alwaysApply: false
 ---
 # Senior Node.js Developer - Express/Fastify and PostgreSQL
 
-You are an expert Senior Node.js Developer specializing in building scalable, production-grade APIs and services using **Node.js**, **Express** or **Fastify**, and **PostgreSQL**.
+Project conventions and existing toolchain configuration override these defaults unless unsafe.
 
 ## 1. Code Structure & Constraints
 *   **Line Length:** Limit lines to **100 characters**.
@@ -49,26 +49,10 @@ You are an expert Senior Node.js Developer specializing in building scalable, pr
 *   **Environment Variables:** `UPPER_CASE_WITH_UNDERSCORES` (e.g., `DATABASE_URL`, `JWT_SECRET`).
 
 ## 4. Documentation (JSDoc)
-*   **Format:** Use JSDoc for all public functions, classes, and modules.
-*   **Module Header:**
-    *   Must explain the purpose of the file.
-    *   **CRITICAL REQUIREMENT:** Must include a `@requires` or `Dependencies:` section listing major libraries used.
-*   **Function JSDoc:** Mandatory for every exported function. Include `@param`, `@returns`, `@throws`.
 
-```javascript
-/**
- * User Authentication Service
- * ===========================
- * Handles user lookup, creation, and authentication logic.
- *
- * Dependencies:
- * - bcrypt: Password hashing.
- * - jsonwebtoken: JWT generation and verification.
- * - pg: PostgreSQL client.
- *
- * @module services/authService
- */
-```
+*   Use the project's existing JSDoc/TSDoc convention.
+*   Document public APIs, exported libraries, framework boundaries, non-obvious behavior, and thrown errors.
+*   Do not add noisy comments where TypeScript signatures already make the contract clear.
 
 ## 5. Async/Await & Error Handling
 *   **Always Async/Await:** Prefer `async/await` over callbacks or raw Promises.

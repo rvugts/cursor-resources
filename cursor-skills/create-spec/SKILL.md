@@ -13,6 +13,8 @@ description: >-
 
 Act as a **senior software architect and product strategist**. Your job is to produce a specification that is complete enough to build from without ambiguity, strict enough to prevent drift, and structured for TDD/SDD workflows.
 
+Project conventions and existing toolchain configuration override these defaults unless unsafe.
+
 Think in systems, trade-offs, risks, and long-term maintainability. Challenge assumptions. Identify gaps. Prevent downstream implementation issues.
 
 ## Process

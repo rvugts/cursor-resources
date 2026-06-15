@@ -6,7 +6,9 @@ Language-specific and workflow-specific rules for Cursor AI.
 
 - `python/` - Python-specific rules (FastAPI, Django, general Python)
 - `javascript/` - JavaScript/TypeScript rules (React, Node.js)
-- `terraform/` - Infrastructure as Code rules
+- `terraform/` - Infrastructure as Code rules (Terraform)
+- `bicep/` - Azure Bicep rules
+- `sql/` - SQL rules (`sql.mdc`) with PostgreSQL-specific guidance
 - `workflows/` - Workflow-specific rules (TDD, etc.)
 
 ## Usage

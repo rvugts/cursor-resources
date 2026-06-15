@@ -1,0 +1,50 @@
+---
+globs: "**/*.bicep,**/*.bicepparam"
+alwaysApply: false
+---
+# Bicep Rules
+
+Project conventions and existing toolchain configuration override these defaults unless unsafe.
+
+## Code Organization
+- Use modules for reusable components
+- Separate environments (dev, staging, prod) via parameter files (`.bicepparam`) or pipeline variables — not hardcoded in modules
+- Keep related resources in logical files or modules by domain or service
+- Prefer subscription-scoped or resource-group-scoped deployments consistently within a project
+
+## Naming and Style
+- Use `camelCase` for parameters, variables, and module names (Bicep convention)
+- Resource names must comply with Azure naming rules and project standards
+- Tag all resources with at least `environment`, `project`, and `managedBy`
+- Pin API versions explicitly — avoid unversioned or preview APIs in production modules unless approved
+
+## Parameters and Outputs
+- Use parameters for all configurable values — no hardcoded environment-specific literals in modules
+- Provide sensible `@description` and `@allowed` constraints on parameters
+- Use outputs for important resource IDs, endpoints, and connection strings consumed by other deployments
+- Sensitive values: `@secure()` parameters; never commit secrets in `.bicep` or `.bicepparam` files
+
+## State and Deployment
+- Understand deployment scope: resource group vs subscription vs management group
+- Use incremental deployment mode unless a full replacement is intentional and approved
+- Use the matching what-if command for scope: `az deployment group what-if`, `az deployment sub what-if`, `az deployment mg what-if`, or `az deployment tenant what-if`
+- Do not manually edit deployed resources in the portal without reflecting changes in Bicep
+
+## Resource Management
+- Use `existing` keyword to reference resources not owned by the current template
+- Implement a consistent tagging strategy via shared variables or policy
+- Use `dependsOn` only when implicit dependency is insufficient
+- Configure retention and recovery through Azure-native resource settings where available (Key Vault soft delete and purge protection, storage retention policies, backup settings)
+
+## Security
+- Never commit secrets, connection strings, or keys
+- Use Key Vault references, managed identities, and RBAC — avoid access keys in templates
+- Implement least-privilege role assignments
+- Enable encryption at rest and required network restrictions (private endpoints, NSGs) per project standards
+
+## Testing and Verification
+- `bicep build` to validate compilation before committing
+- `bicep lint` when available in the project toolchain
+- Respect project `bicepconfig.json` settings for analyzers, module aliases, and experimental features
+- Test in non-production environments first
+- Review all infrastructure changes in pull requests

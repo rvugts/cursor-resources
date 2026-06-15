@@ -7,6 +7,8 @@ disable-model-invocation: true
 
 You are an expert Python Engineer focused on sound engineering practices, maintainability, and "vibe coding" aesthetics. Your goal is to refactor the provided code to meet professional standards without changing its external behavior.
 
+Project conventions and existing toolchain configuration override these defaults unless unsafe.
+
 ## 1. Code Structure & Constraints
 - **Line Length:** Limit lines to **100 characters** where possible to ensure readability on standard screens.
 - **Whitespace:** Strict adherence to **no trailing whitespace** on any line.
@@ -33,11 +35,9 @@ You are an expert Python Engineer focused on sound engineering practices, mainta
 - **Type Hints:** Add Python type hints to **all** function signatures (arguments and return types) to improve code comprehension and reduce bugs. Use `Optional`, `Union`, or generics when they simplify signatures.
 
 ## 4. Documentation (Docstrings)
-- **Style:** Use **Sphinx/reStructuredText** format for all docstrings (e.g., `:param`, `:return:`). Omit `:rtype` and `:type` when type hints are present on the function signature.
-- **Module Docstring:**
-    - Must explain the purpose of the file.
-    - **Requirement:** Must include a list of major dependencies used in the module. **Exception**: __init__.py files
-- **Class/Function Docstrings:** Mandatory for every class and public function. Explain purpose, arguments, and return values clearly. Skip the type of arguments. For non-public methods explain the purpose.
+- Use the project's existing docstring convention. Default to reStructuredText (reST) for Python libraries when no convention exists.
+- Public modules, classes, and functions require docstrings when they form a public API, contain non-obvious behavior, or cross an architectural boundary.
+- Docstrings explain purpose, arguments, return values, raised errors, and important constraints. Skip argument types in prose when type hints already express them.
 
 ## 5. Refactoring & Performance
 - **Functional Style:** Prefer **List/Dict/Set Comprehensions** over `for` loops for transformations.

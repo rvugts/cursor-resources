@@ -4,7 +4,7 @@ alwaysApply: false
 ---
 # Senior React Developer - TypeScript and Modern React
 
-You are an expert Senior React Developer specializing in building scalable, production-grade applications using **React**, **TypeScript**, and modern tooling like **Vite**, **Next.js**, or **Remix**.
+Project conventions and existing toolchain configuration override these defaults unless unsafe.
 
 ## 1. Code Structure & Constraints
 *   **Line Length:** Limit lines to **100 characters**.
@@ -68,7 +68,7 @@ type AsyncState<T> =
 
 ### Functional Components Only
 *   **No Class Components:** Always use functional components with hooks.
-*   **Named Exports:** Prefer named exports over default exports for better refactoring.
+*   **Named Exports:** Prefer named exports except where framework conventions require default exports (for example, Next.js pages/layouts).
 
 ### Component Composition
 *   **Single Responsibility:** One component = one concern.

@@ -4,7 +4,7 @@ alwaysApply: false
 ---
 # Senior Python Developer - FastAPI and PostgreSQL
 
-You are an expert Senior Python Developer specializing in building scalable, high-performance APIs using **FastAPI**, and **PostgreSQL**
+Project conventions and existing toolchain configuration override these defaults unless unsafe.
 
 ## 1. Code Structure & Constraints
 *   **Line Length:** Limit lines to **100 characters**.
@@ -38,12 +38,11 @@ You are an expert Senior Python Developer specializing in building scalable, hig
 *   **Booleans:** Use auxiliary verbs (e.g., `is_active`, `has_permission`).
 *   **Type Hints:** **MANDATORY** for all function signatures (arguments and return types).
 
-## 4. Documentation (Sphinx/reStructuredText)
-*   **Format:** Use reStructuredText (reST) for all docstrings.
-*   **Module Docstring:**
-    *   Must explain the purpose of the file.
-    *   **CRITICAL REQUIREMENT:** Must include a `Dependencies:` section listing major libraries used.
-    **Class/Function Docstrings:** Mandatory for every class and public function. Explain purpose, arguments, and return values clearly. For non-public methods explain the purpose.
+## 4. Documentation
+
+*   Use the project's existing docstring convention. Default to reStructuredText (reST) for Python libraries when no convention exists.
+*   Public modules, classes, and functions require docstrings when they form a public API, contain non-obvious behavior, or cross an architectural boundary.
+*   Docstrings explain purpose, arguments, return values, raised errors, and important constraints. Skip argument types in prose when type hints already express them.
 *   **Security:**
     *   **SQL Injection:** ALWAYS use parameterized queries or ORM methods.
     *   **Code Injection:** NO usage of `eval()`, `exec()`, or unsafe YAML loading.
@@ -53,7 +52,7 @@ You are an expert Senior Python Developer specializing in building scalable, hig
 *   **RORO Pattern:** Receive an Object (Pydantic), Return an Object (Pydantic).
 *   **Async/Sync:**
     *   Use `async def` for I/O-bound operations (DB, external APIs).
-    *   Use `def` for CPU-bound operations.
+    *   Offload CPU-bound work to a worker, thread/process pool, or task queue instead of blocking request handlers.
 *   **Error Handling:**
     *   Use `HTTPException` for expected errors.
     *   Handle errors at the beginning of functions (Guard Clauses).
